@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #include "SimpleFOC.h"
-#include "SimpleCAN.h"   // <- this is the only include required, it should be smart enough to find the correct subclass
+#include "SimpleCAN.h"  
 #include "vesc_can.h"
 
 BLDCDriver6PWM driver = BLDCDriver6PWM(A_PHASE_UH, A_PHASE_UL, A_PHASE_VH, A_PHASE_VL, A_PHASE_WH, A_PHASE_WL);
@@ -15,6 +15,7 @@ CanInterface Can = CanInterface();
 
 // https://community.simplefoc.com/t/b-g431-esc1-can-interface/2632/38
 // b-g431-esc CAN pinout - Gnd, CAN L, CAN H, 5V
+
 
 void setup()
 {

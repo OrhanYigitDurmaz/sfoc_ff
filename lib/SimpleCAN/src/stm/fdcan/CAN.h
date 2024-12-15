@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(HAL_FDCAN_MODULE_ENABLED)
+#if defined(STM32G4xx)
 
 #include "Arduino.h"
 #include "BaseCAN.h"

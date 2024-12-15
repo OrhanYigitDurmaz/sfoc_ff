@@ -2,7 +2,7 @@
 #include "esp/twai/CAN.h"
 #elif defined(HAL_CAN_MODULE_ENABLED)
 #include "stm/can/CAN.h"
-#elif defined(HAL_FDCAN_MODULE_ENABLED)
+#elif defined(STM32G4xx)
 #include "stm/fdcan/CAN.h"
 #elif defined(ARDUINO_ARCH_GD32)
 #include "gd/can2b/CAN.h"

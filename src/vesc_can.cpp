@@ -127,35 +127,54 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
     size_t ind = 0;
 
     CanMsg txMsg;
-
+    
     switch (comm_cmd) {
         case VescCmd::COMM_FW_VERSION:
+            buffer[ind++] = VescCmd::COMM_FW_VERSION;
             buffer[ind++] = 0xbe;
             buffer[ind++] = 0xef;
             txMsg = CanMsg(CanExtendedId(this->can_address | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)),ind, buffer);
             this->can->write(txMsg); 
             break;
         case VescCmd::COMM_GET_VALUES_SELECTIVE:
+            buffer[ind++] = VescCmd::COMM_GET_VALUES_SELECTIVE;
             uint32_t request = 0;
             memcpy(&request, &rxMsg.data[3], 4);
+            memcpy(&buffer[ind++],&request,4);
+            ind+=3;
+
             if (request & (1<<8)) {
                 // send voltage
-                float voltage = 12;
-                int16_t scaled_voltage = (int16_t) (voltage*10.0f);
+                int16_t scaled_voltage = (int16_t) (this->voltage*10.0f);
                 memcpy(&buffer[ind++],&scaled_voltage,2);
-
+                ind++;
             }
             if (request & (1<<15)) {
                 // send status
-                uint8_t status = VescState::VESC_STATE_READY;
+                uint8_t status = 4;
+                switch (error_state) {
+                    case 0:
+                        status = VescState::VESC_STATE_READY;
+                        break;
+                    default:
+                        status = VescState::VESC_STATE_ERROR;
+                }
                 memcpy(&buffer[ind++],&status,1);
 
             }
 
-            txMsg = CanMsg(CanExtendedId(this->can_address | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)),ind, buffer);
+            txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)),ind, buffer);
             this->can->write(txMsg);  
             break;
         };
+}
+
+void CanInterface::setVBus(float _voltage) {
+    this->voltage = _voltage;
+}
+
+void CanInterface::setErrorState(int _error) {
+    this->error_state = _error;
 }
 
 // const uint8_t crctable[] = { 0x0000, 0x1021, 0x2042, 0x3063, 0x4084,

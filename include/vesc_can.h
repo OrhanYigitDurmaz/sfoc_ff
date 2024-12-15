@@ -14,6 +14,8 @@ public:
     void linkMotor(FOCMotor *motor);
     void linkCan(BaseCAN *can);
     void setCanAddr(uint8_t address);
+    void setVBus(float voltage);
+    void setErrorState(int err);
 
     void begin();
 
@@ -25,6 +27,9 @@ private:
     BaseCAN *can = nullptr;
     FOCMotor *motor = nullptr;
     // uint8_t buffer_rx[BUFFER_RX_SIZE]; // may be used to store multi-frame messages, currently unused
+    
+    float voltage=0.0;
+    int error_state = 0;
 
     void process_short_buffer(CanMsg rxMsg);
 };

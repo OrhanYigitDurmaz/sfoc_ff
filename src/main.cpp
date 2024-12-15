@@ -11,6 +11,7 @@
 constexpr int pole_pairs = 4;
 constexpr float phase_resistance = 0.8;
 constexpr float phase_inductance = 0.00008;
+constexpr float max_current = 8.0;
 constexpr float current_bandwidth = 300;
 
 constexpr float v_bus_scale = 10.2838;
@@ -48,6 +49,8 @@ void setup()
 
   driver.voltage_power_supply = 16;
   driver.voltage_limit = driver.voltage_power_supply*0.9;
+  motor.current_limit = max_current;
+
   int driver_init = driver.init();
   Serial.printf("Driver init status: %d\n", driver_init);
 

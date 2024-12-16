@@ -37,6 +37,9 @@ void CanInterface::linkMotor(FOCMotor *_motor) {
 void CanInterface::setCanSpeed(uint32_t _speed) {
     this->can_speed = _speed;
 }
+void CanInterface::setCanAddr(uint8_t _addr) {
+    this->can_address = _addr;
+}
 void CanInterface::begin() {
     this->can->logTo(&Serial);
     this->can->disableInternalLoopback();

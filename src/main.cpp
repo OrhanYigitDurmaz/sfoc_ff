@@ -8,12 +8,18 @@
 #include "SimpleCAN.h"  
 #include "vesc_can.h"
 
+// motor constants
 constexpr int pole_pairs = 4;
 constexpr float phase_resistance = 0.8;
 constexpr float phase_inductance = 0.00008;
 constexpr float max_current = 8.0;
 constexpr float current_bandwidth = 300;
 
+// setup constants
+constexpr uint32_t CAN_speed = 500000;
+constexpr uint8_t CAN_address = 0xFF;
+
+// constants relevant to the driver hardware
 constexpr float v_bus_scale = 10.2838;
 
 int error_status = 0;
@@ -66,6 +72,8 @@ void setup()
   int cs_init = currentsense.init();
   Serial.printf("Current sense init status: %d\n", cs_init);
 
+  Can.setCanAddr(CAN_address);
+  Can.setCanSpeed(CAN_speed);
   Can.linkCan(&CAN);
   Can.linkMotor(&motor);
   

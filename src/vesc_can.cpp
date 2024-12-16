@@ -34,13 +34,15 @@ void CanInterface::linkCan(BaseCAN *_can) {
 void CanInterface::linkMotor(FOCMotor *_motor) {
     this->motor = _motor;
 }
-
+void CanInterface::setCanSpeed(uint32_t _speed) {
+    this->can_speed = _speed;
+}
 void CanInterface::begin() {
     this->can->logTo(&Serial);
     this->can->disableInternalLoopback();
     CanFilter filter = CanFilter(MASK_EXTENDED, this->can_address, 0xFF, FILTER_ANY_FRAME);
     this->can->filter(filter);
-    this->can->begin(this->can_baud);
+    this->can->begin(this->can_speed);
 }
 
 void CanInterface::run() {

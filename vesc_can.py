@@ -81,11 +81,12 @@ vesc.get_position()
 time.sleep(0.1)
 vesc.get_telem()
 vesc.get_telem()
+time.sleep(0.5)
 
 t0 = time.monotonic()
 while True:
     try:
-        cf = s.recv(16,)
+        cf, addr = s.recvfrom(16,)
     except Exception as e:
         print(e)
         break
@@ -94,10 +95,10 @@ while True:
     can_id, cmd, can_dlc, data = struct.unpack_from("BBxxBBxx", cf)
     if cmd == 0x38:
         data = float(struct.unpack('i', cf[8:12])[0])/1e6
-    if cmd == 0x8:
+    elif cmd == 0x8:
         buffer = cf[8:]
-        print([f'0x{b:02x} ' for b in cf])
-        print([f'{int(b)} ' for b in cf])
+        print([f'0x{b:02x} ' for b in buffer])
+        # print([f'{int(b)} ' for b in cf])
         sub_cmd = buffer[2]
         data = ''
         if sub_cmd == 0:

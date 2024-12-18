@@ -161,8 +161,9 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
                 ind+=4;
                 // send voltage
                 int16_t scaled_voltage = (int16_t) (this->voltage*10.0f);
-                memcpy(&buffer[ind],&scaled_voltage,2);
-                ind+=2;
+                memcpy(&buffer[ind++],&scaled_voltage,2);
+                // ind+=2; // commented out because if we try to send an invalid frame, it gets null'd out on us
+                // so only send the voltage MS Byte
                 txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer);
                 this->can->write(txMsg); 
             }

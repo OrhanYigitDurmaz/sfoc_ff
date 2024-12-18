@@ -128,33 +128,52 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
     uint8_t comm_cmd = rxMsg.data[2];
 
     uint8_t buffer[BUFFER_RX_SIZE];
-    // need to include some more stuff for vesc?
+
     size_t ind = 0;
 
     CanMsg txMsg;
     
     switch (comm_cmd) {
         case VescCmd::COMM_FW_VERSION:
+            buffer[ind++] = this->can_address;
+            buffer[ind++] = 0; // process this pls
             buffer[ind++] = VescCmd::COMM_FW_VERSION;
-            buffer[ind++] = 0xbe;
-            buffer[ind++] = 0xef;
-            txMsg = CanMsg(CanExtendedId(this->can_address | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)),ind, buffer);
+            buffer[ind++] = VESC_FW_MAJOR;
+            buffer[ind++] = VESC_FW_MINOR;
+
+            txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer);
             this->can->write(txMsg); 
             break;
         case VescCmd::COMM_GET_VALUES_SELECTIVE:
-            buffer[ind++] = VescCmd::COMM_GET_VALUES_SELECTIVE;
             uint32_t request = 0;
             memcpy(&request, &rxMsg.data[3], 4);
-            memcpy(&buffer[ind++],&request,4);
-            ind+=3;
+
+            // this needs to use the FILL_BUFFER part of the protocol
+            // the voltage message is too long to fit in an 8 byte CAN frame, so this wont work
 
             if (request & (1<<8)) {
+                ind=0;
+                buffer[ind++] = this->can_address;
+                buffer[ind++] = 0; // process this pls
+                buffer[ind++] = VescCmd::COMM_GET_VALUES_SELECTIVE;
+                uint32_t tmp_req = 1<<8;
+                memcpy(&buffer[ind],&tmp_req,4);
+                ind+=4;
                 // send voltage
                 int16_t scaled_voltage = (int16_t) (this->voltage*10.0f);
-                memcpy(&buffer[ind++],&scaled_voltage,2);
-                ind++;
+                memcpy(&buffer[ind],&scaled_voltage,2);
+                ind+=2;
+                txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer);
+                this->can->write(txMsg); 
             }
             if (request & (1<<15)) {
+                ind=0;
+                buffer[ind++] = this->can_address;
+                buffer[ind++] = 0; // process this pls
+                buffer[ind++] = VescCmd::COMM_GET_VALUES_SELECTIVE;
+                uint32_t tmp_req = 1<<15;
+                memcpy(&buffer[ind],&tmp_req,4);
+                ind+=4;
                 // send status
                 uint8_t status = 4;
                 switch (error_state) {
@@ -165,11 +184,11 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
                         status = VescState::VESC_STATE_ERROR;
                 }
                 memcpy(&buffer[ind++],&status,1);
-
+                txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer);
+                this->can->write(txMsg); 
             }
 
-            txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)),ind, buffer);
-            this->can->write(txMsg);  
+ 
             break;
         };
 }

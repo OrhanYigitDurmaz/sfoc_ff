@@ -8,6 +8,9 @@
 
 
 constexpr size_t BUFFER_RX_SIZE = 64;
+constexpr uint8_t VESC_FW_MAJOR = 0xBE;
+constexpr uint8_t VESC_FW_MINOR = 0xEF;
+
 
 class CanInterface {
 public:

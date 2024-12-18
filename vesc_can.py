@@ -45,11 +45,11 @@ class VESC():
         self.send(self.POLL_ROTOR_POS, '')
 
     def get_fw_version(self):
-        data = '420000'
+        data = '400000'
         self.send(self.PROCESS_SHORT_BUFFER, data)
 
     def get_telem(self):
-        data = '42' + '00' + '32'
+        data = '40' + '00' + '32'
         cmd = struct.pack('i', 1 << 8 | 1 << 15)
         cmd_str = ''.join([f'{b:02x}' for b in cmd])
         data = data + cmd_str
@@ -85,24 +85,33 @@ vesc.get_telem()
 t0 = time.monotonic()
 while True:
     try:
-        cf, addr = s.recvfrom(16,)
-    except Exception:
+        cf = s.recv(16,)
+    except Exception as e:
+        print(e)
         break
     # print(cf)
 # Unpack the CAN frame
-    can_id, cmd, can_dlc, data = struct.unpack_from("BBxxBB2x", cf)
+    can_id, cmd, can_dlc, data = struct.unpack_from("BBxxBBxx", cf)
     if cmd == 0x38:
         data = float(struct.unpack('i', cf[8:12])[0])/1e6
     if cmd == 0x8:
+        buffer = cf[8:]
+        print([f'0x{b:02x} ' for b in cf])
+        print([f'{int(b)} ' for b in cf])
+        sub_cmd = buffer[2]
         data = ''
-        mask = int(struct.unpack('i', cf[9:13])[0])
-        print(f'flags: voltage: {mask&(1<<8)==(1<<8)} - status: {mask&(1<<15)==(1<<15)}')
-        if mask & 1 << 8:
-            volts = struct.unpack('h', cf[13:15])[0]
-            data += f'Volts: {volts/10.0:.3f}'
-        if mask & 1 << 15:
-            status = cf[15]
-            data += ' ' + f'status: {status}'
+        if sub_cmd == 0:
+            print(f'FW version: 0x{buffer[3]:02x}:0x{buffer[4]:02x}')
+        elif sub_cmd == 50:
+            pass
+            # mask = int(struct.unpack('i', cf[11:15])[0])
+            # print(f'flags: voltage: {mask&(1<<8)==(1<<8)} - status: {mask&(1<<15)==(1<<15)}')
+            # if mask & 1 << 8:
+            #     volts = struct.unpack('h', cf[15:18])[0]
+            #     data += f'Volts: {volts/10.0:.3f}'
+            # if mask & 1 << 15:
+            #     status = cf[18]
+            #     data += ' ' + f'status: {status}'
 
     else:
         data = cf[8:]

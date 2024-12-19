@@ -12,7 +12,7 @@
 constexpr int pole_pairs = 4;
 constexpr float phase_resistance = 0.8;
 constexpr float phase_inductance = 0.00008;
-constexpr float max_current = 8.0;
+constexpr float max_current = 4.0;
 constexpr float current_bandwidth = 300;
 constexpr unsigned int encoder_ppr = 2048;
 // setup constants

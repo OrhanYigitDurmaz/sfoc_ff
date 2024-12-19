@@ -77,12 +77,14 @@ void CanInterface::run() {
                 break;
             case VescCANMsg::CAN_PACKET_SET_CURRENT_REL:
             {
+                // set torque as a fraction of max current
                 if (rxMsg.data_length <4) break;
                 int32_t int_tq = 0;
                 memcpy(&int_tq, rxMsg.data, 4);
-                float torque = (float) int_tq / (float) 1e5; 
-                this->motor->target = torque;
-                Serial.printf("Setting torque to: %f\n", torque);
+                float torque_request = (float) int_tq / 100000.0f; 
+                float max_current = this->motor->current_limit;
+                this->motor->target = max_current * torque_request;
+                Serial.printf("Setting torque to: %f\n", this->motor->target);
             }
                 break;
 

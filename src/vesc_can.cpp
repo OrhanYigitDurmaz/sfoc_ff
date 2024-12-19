@@ -96,8 +96,9 @@ void CanInterface::run() {
                 break;    
             case VescCANMsg::CAN_PACKET_POLL_ROTOR_POS: 
             {
-                // reply with same, scale factor = 1e6
-                int32_t pos = this->motor->shaft_angle * 1e6f;
+                // reply with same, scale factor = 1e5
+                float mech_angle =fmodf(this->motor->shaft_angle, _2PI)*180.0f/_2PI;
+                int32_t pos = mech_angle * 100000.0f;
                 uint8_t buffer[4]; 
                 memcpy(buffer,&pos,4);
 

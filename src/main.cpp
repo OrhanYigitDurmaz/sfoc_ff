@@ -28,7 +28,7 @@ SimpleFOCDebug debug;
 
 BLDCDriver6PWM driver = BLDCDriver6PWM(A_PHASE_UH, A_PHASE_UL, A_PHASE_VH, A_PHASE_VL, A_PHASE_WH, A_PHASE_WL);
 LowsideCurrentSense currentsense = LowsideCurrentSense(0.003f, -64.0f/7.0f, A_OP1_OUT, A_OP2_OUT, A_OP3_OUT);
-BLDCMotor motor = BLDCMotor(4);
+BLDCMotor motor = BLDCMotor(pole_pairs);
 STM32HWEncoder encoder = STM32HWEncoder(encoder_ppr, A_ENCODER_A, A_ENCODER_B);
 
 Commander command = Commander(Serial);

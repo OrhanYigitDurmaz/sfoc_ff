@@ -12,6 +12,8 @@
 constexpr int pole_pairs = 4;
 constexpr float phase_resistance = 0.8;
 constexpr float phase_inductance = 0.00008;
+constexpr float motor_KV = NOT_SET;
+
 constexpr float max_current = 4.0;
 constexpr float current_bandwidth = 300;
 constexpr unsigned int encoder_ppr = 2048;
@@ -28,16 +30,13 @@ SimpleFOCDebug debug;
 
 BLDCDriver6PWM driver = BLDCDriver6PWM(A_PHASE_UH, A_PHASE_UL, A_PHASE_VH, A_PHASE_VL, A_PHASE_WH, A_PHASE_WL);
 LowsideCurrentSense currentsense = LowsideCurrentSense(0.003f, -64.0f/7.0f, A_OP1_OUT, A_OP2_OUT, A_OP3_OUT);
-BLDCMotor motor = BLDCMotor(pole_pairs);
+BLDCMotor motor = BLDCMotor(pole_pairs, phase_resistance, motor_KV, phase_inductance);
 STM32HWEncoder encoder = STM32HWEncoder(encoder_ppr, A_ENCODER_A, A_ENCODER_B);
 
 Commander command = Commander(Serial);
 void onMotor(char* cmd){command.motor(&motor,cmd);}
 
 CanInterface Can = CanInterface();
-
-// volatile float ac_arr[4000];
-
 // https://community.simplefoc.com/t/b-g431-esc1-can-interface/2632/38
 // b-g431-esc CAN pinout - Gnd, CAN L, CAN H, 5V
 
@@ -45,7 +44,6 @@ int check_vbus();
 
 void setup()
 {
-  // ac_arr[1] = 1.23;
   encoder._pinA = PB_6;
   encoder._pinB = PB_7_ALT1;
 

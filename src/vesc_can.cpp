@@ -1,5 +1,5 @@
 #include "vesc_can.h"
-
+#include <algorithm>
 
 enum VescState : uint32_t {
 	VESC_STATE_UNKNOWN = 0,
@@ -81,10 +81,10 @@ void CanInterface::run() {
                 if (rxMsg.data_length <4) break;
                 int32_t int_tq = 0;
                 memcpy(&int_tq, rxMsg.data, 4);
+                int_tq = __builtin_bswap32(int_tq);
                 float torque_request = (float) int_tq / 100000.0f; 
                 float max_current = this->motor->current_limit;
                 this->motor->target = max_current * torque_request;
-                Serial.printf("Setting torque to: %f\n", this->motor->target);
             }
                 break;
 
@@ -99,12 +99,12 @@ void CanInterface::run() {
             case VescCANMsg::CAN_PACKET_POLL_ROTOR_POS: 
             {
                 // reply with same, scale factor = 1e5
-                float mech_angle =fmodf(this->motor->shaft_angle, _2PI)*180.0f/_2PI;
+                float mech_angle = fmodf(this->motor->shaft_angle, _2PI)*180.0f/_PI;
                 int32_t pos = mech_angle * 100000.0f;
-                uint8_t buffer[4]; 
-                memcpy(buffer,&pos,4);
-
-                txMsg = CanMsg(CanExtendedId(this->can_address | (VescCANMsg::CAN_PACKET_POLL_ROTOR_POS<<8)),4, buffer);
+                std::array<uint8_t,4> buffer; 
+                memcpy(buffer.data(),&pos,4);
+                std::reverse(buffer.begin(), buffer.end());
+                txMsg = CanMsg(CanExtendedId(this->can_address | (VescCANMsg::CAN_PACKET_POLL_ROTOR_POS<<8)),4, buffer.data());
                 this->can->write(txMsg);
             }
                 break;
@@ -114,23 +114,13 @@ void CanInterface::run() {
 }
 
 void CanInterface::process_short_buffer(CanMsg rxMsg) {
-	// msg[2] = (uint8_t) VescCmd::COMM_GET_VALUES_SELECTIVE;// sub action is COMM_GET_VALUES_SELECTIVE : ask wanted data
-	// uint32_t request = ((uint32_t) 1 << 15); // bit 15 = ask vesc status (1byte)
-	// request |= ((uint32_t) 1 << 8);				// bit 8  = ask voltage	(2byte)
 
-    // or
-
-    // msg[2] = (uint8_t) VescCmd::COMM_FW_VERSION;// sub action is to get FW version
-
-    // data[0] -> target vesc id
-    // only used for: COMM_FW_VERSION and COMM_GET_VALUES_SELECTIVE
     if (rxMsg.data_length < 3 ) return;
 
     uint8_t sendTo = rxMsg.data[0];
     uint8_t action = rxMsg.data[1];
     uint8_t comm_cmd = rxMsg.data[2];
-
-    uint8_t buffer[BUFFER_RX_SIZE];
+    std::array<uint8_t,BUFFER_RX_SIZE> buffer;
 
     size_t ind = 0;
 
@@ -144,13 +134,15 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
             buffer[ind++] = VESC_FW_MAJOR;
             buffer[ind++] = VESC_FW_MINOR;
 
-            txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer);
+            txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer.data());
             this->can->write(txMsg); 
             break;
         case VescCmd::COMM_GET_VALUES_SELECTIVE:
             uint32_t request = 0;
             memcpy(&request, &rxMsg.data[3], 4);
+            request = __builtin_bswap32(request);
 
+            // TODO
             // this needs to use the FILL_BUFFER part of the protocol
             // the voltage message is too long to fit in an 8 byte CAN frame, so this wont work
 
@@ -159,15 +151,17 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
                 buffer[ind++] = this->can_address;
                 buffer[ind++] = 0; // process this pls
                 buffer[ind++] = VescCmd::COMM_GET_VALUES_SELECTIVE;
-                uint32_t tmp_req = 1<<8;
+                uint32_t tmp_req = __builtin_bswap32(1<<8);
                 memcpy(&buffer[ind],&tmp_req,4);
                 ind+=4;
                 // send voltage
                 int16_t scaled_voltage = (int16_t) (this->voltage*10.0f);
-                memcpy(&buffer[ind++],&scaled_voltage,2);
+                buffer[ind++] = scaled_voltage>>8;
+
+
                 // ind+=2; // commented out because if we try to send an invalid frame, it gets null'd out on us
                 // so only send the voltage MS Byte
-                txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer);
+                txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer.data());
                 this->can->write(txMsg); 
             }
             if (request & (1<<15)) {
@@ -175,20 +169,17 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
                 buffer[ind++] = this->can_address;
                 buffer[ind++] = 0; // process this pls
                 buffer[ind++] = VescCmd::COMM_GET_VALUES_SELECTIVE;
-                uint32_t tmp_req = 1<<15;
+                uint32_t tmp_req = __builtin_bswap32(1<<15);
                 memcpy(&buffer[ind],&tmp_req,4);
+
                 ind+=4;
                 // send status
-                uint8_t status = 4;
-                switch (error_state) {
-                    case 0:
-                        status = VescState::VESC_STATE_READY;
-                        break;
-                    default:
-                        status = VescState::VESC_STATE_ERROR;
+                uint8_t status = 0;
+                if (error_state) {
+                    status = 1;
                 }
-                memcpy(&buffer[ind++],&status,1);
-                txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer);
+                buffer[ind++] = status;
+                txMsg = CanMsg(CanExtendedId(sendTo | (VescCANMsg::CAN_PACKET_PROCESS_SHORT_BUFFER<<8)), ind, buffer.data());
                 this->can->write(txMsg); 
             }
 

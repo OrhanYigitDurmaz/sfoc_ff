@@ -52,6 +52,11 @@ void CanInterface::run() {
     if (!this->can) return;
     if (!this->motor) return;
 
+    uint32_t current_time = micros();
+    if ((current_time - this->time_of_last_comm > 9e5f) && this->motor->enabled) {
+        this->motor->disable();
+    }
+
     while (this->can->available() > 0)
     {
         CanMsg const rxMsg = CAN.read();
@@ -138,6 +143,11 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
             this->can->write(txMsg); 
             break;
         case VescCmd::COMM_GET_VALUES_SELECTIVE:
+            this->time_of_last_comm = micros();
+            if (!this->motor->enabled) {
+                this->motor->enable();
+            }
+
             uint32_t request = 0;
             memcpy(&request, &rxMsg.data[3], 4);
             request = __builtin_bswap32(request);

@@ -35,6 +35,7 @@ private:
 
     float voltage=0.0;
     int error_state = 0;
+    uint32_t time_of_last_comm = 0;
 
     void process_short_buffer(CanMsg rxMsg);
 };

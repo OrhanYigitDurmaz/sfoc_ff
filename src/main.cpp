@@ -20,6 +20,7 @@ constexpr unsigned int encoder_ppr = 2048;
 // setup constants
 constexpr uint32_t CAN_speed = 500000;
 constexpr uint8_t CAN_address = 0xFF;
+constexpr uint32_t CAN_termination = LOW; // LOW -> OFF, HIGH -> ON
 
 // constants relevant to the driver hardware
 constexpr float v_bus_scale = 10.2838;
@@ -44,6 +45,9 @@ int check_vbus();
 
 void setup()
 {
+  pinMode(PC14, OUTPUT);
+  digitalWrite(PC14, CAN_termination);
+
   encoder._pinA = PB_6;
   encoder._pinB = PB_7_ALT1;
 
@@ -124,6 +128,7 @@ int check_vbus() {
     motor.target = 0;
     motor.disable();
     error = 1;
+    Serial.printf("Overvoltage: Motor off\n");
   }
   return error;
 }

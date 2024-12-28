@@ -41,6 +41,7 @@ CanInterface Can = CanInterface();
 // https://community.simplefoc.com/t/b-g431-esc1-can-interface/2632/38
 // b-g431-esc CAN pinout - Gnd, CAN L, CAN H, 5V
 
+void set_remote_control(char* cmd);
 int check_vbus();
 
 void setup()
@@ -55,7 +56,8 @@ void setup()
   debug.enable();
   SimpleFOC_CORDIC_Config();      // initialize the CORDIC
   command.add('M',&onMotor,"motor");
-  
+  command.add('R',set_remote_control,"Enable/Disable Remote control over CAN");
+
   delay(2000);
 
   driver.voltage_power_supply = 16;
@@ -131,4 +133,25 @@ int check_vbus() {
     Serial.printf("Overvoltage: Motor off\n");
   }
   return error;
+}
+
+void set_remote_control(char* cmd) {
+  if (!cmd) {
+    Serial.println("Enable [1] or Disable [0] CAN control");
+    return;
+  }
+  Serial.print("Remote CAN Control: ");
+  char state = cmd[0];
+  bool enable = false;
+  if (state == '0') {
+    enable = false;
+    Serial.println("Disabled");
+  } else if (state == '1') {
+    enable = true;
+    Serial.println("Enabled");
+  } else {
+    Serial.println("Enable [1] or Disable [0]");
+    return;
+  }
+  Can.enableRemote(enable);
 }

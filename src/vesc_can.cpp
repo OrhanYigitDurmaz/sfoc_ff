@@ -48,13 +48,18 @@ void CanInterface::begin() {
     this->can->begin(this->can_speed);
 }
 
+void CanInterface::enableRemote(bool enable) {
+    this->remote_enable = enable;
+}
+
 void CanInterface::run() {
     if (!this->can) return;
     if (!this->motor) return;
 
     uint32_t current_time = micros();
-    if ((current_time - this->time_of_last_comm > 9e5f) && this->motor->enabled) {
+    if ((current_time - this->time_of_last_comm > 9e5f) && this->motor->enabled && this->remote_enable) {
         this->motor->disable();
+        Serial.printf("No Comms: Motor Off\n");
     }
 
     while (this->can->available() > 0)
@@ -84,6 +89,9 @@ void CanInterface::run() {
             {
                 // set torque as a fraction of max current
                 if (rxMsg.data_length <4) break;
+                if (!this->remote_enable) {
+                    break;
+                }
                 int32_t int_tq = 0;
                 memcpy(&int_tq, rxMsg.data, 4);
                 int_tq = __builtin_bswap32(int_tq);
@@ -145,7 +153,9 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
         case VescCmd::COMM_GET_VALUES_SELECTIVE:
             this->time_of_last_comm = micros();
             if (!this->motor->enabled) {
-                this->motor->enable();
+                if (!this->remote_enable) {
+                    this->motor->enable();
+                }
             }
 
             uint32_t request = 0;

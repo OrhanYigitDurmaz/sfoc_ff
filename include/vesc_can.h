@@ -23,20 +23,22 @@ public:
     void setErrorState(int err);
     void begin();
     void run();
+    void enableRemote(bool enable);
 
 
 private:
+    void process_short_buffer(CanMsg rxMsg);
     BaseCAN *can = nullptr;
     FOCMotor *motor = nullptr;
-    // uint8_t buffer_rx[BUFFER_RX_SIZE]; // may be used to store multi-frame messages, currently unused
-    
-    uint8_t can_address = 0xFF;
-    int32_t can_speed = 500000;
 
     float voltage=0.0;
     int error_state = 0;
     uint32_t time_of_last_comm = 0;
+    int32_t can_speed = 500000;
+    uint8_t can_address = 0xFF;
+    uint8_t remote_enable = 1;
 
-    void process_short_buffer(CanMsg rxMsg);
+    // uint8_t buffer_rx[BUFFER_RX_SIZE]; // may be used to store multi-frame messages, currently unused
+
 };
 

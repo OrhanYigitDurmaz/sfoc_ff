@@ -27,7 +27,11 @@ public:
 
 
 private:
+    void buffer_append_int16(uint8_t* buffer, int16_t number, int32_t *index);
+    void buffer_append_float16(uint8_t* buffer, float number, float scale, int32_t *index);
+
     void process_short_buffer(CanMsg rxMsg);
+    void respond(uint8_t* data, size_t len);
     BaseCAN *can = nullptr;
     FOCMotor *motor = nullptr;
 

@@ -160,11 +160,11 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
             buffer[ind++] = VescCmd::COMM_GET_VALUES_SELECTIVE;
 
 
-            if (request & (1 << 6)) { // VOLTAGE_IN
+            if (request & (1 << 8)) { // VOLTAGE_IN
                 this->buffer_append_float16(buffer.data(), this->voltage, 1e1, reinterpret_cast<int32_t*>(&ind));
             }
 
-            if (request & (1 << 13)) { // FAULT_CODE
+            if (request & (1 << 15)) { // FAULT_CODE
                 buffer[ind++] = this->error_state;
             }
 

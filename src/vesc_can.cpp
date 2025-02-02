@@ -143,6 +143,9 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
             break;
 
         case VescCmd::COMM_GET_VALUES_SELECTIVE: {
+
+            if (rxMsg.data_length < 7) return;
+
             this->time_of_last_comm = micros();
             if (!this->motor->enabled && this->remote_enable) {
                 this->motor->enable();
@@ -154,12 +157,14 @@ void CanInterface::process_short_buffer(CanMsg rxMsg) {
 
             buffer[ind++] = sendTo;
             buffer[ind++] = action;
+            buffer[ind++] = VescCmd::COMM_GET_VALUES_SELECTIVE;
 
-            if (request & (1 << 8)) {
+
+            if (request & (1 << 6)) { // VOLTAGE_IN
                 this->buffer_append_float16(buffer.data(), this->voltage, 1e1, reinterpret_cast<int32_t*>(&ind));
             }
 
-            if (request & (1 << 15)) {
+            if (request & (1 << 13)) { // FAULT_CODE
                 buffer[ind++] = this->error_state;
             }
 
@@ -196,11 +201,11 @@ void CanInterface::respond(uint8_t* data, size_t len) {
             this->can->write(txMsg);
         }
 
-        send_buffer[0] = data[0];
-        send_buffer[1] = data[1];
-        send_buffer[2] = static_cast<uint8_t>(len >> 8);
-        send_buffer[3] = static_cast<uint8_t>(len);
-        CanMsg txMsg(CanExtendedId(this->can_address | (VescCANMsg::CAN_PACKET_PROCESS_RX_BUFFER << 8)), 4, send_buffer);
+        uint8_t process_buffer[3];
+        process_buffer[0] = data[2]; 
+        process_buffer[1] = (len >> 8) & 0xFF;
+        process_buffer[2] = len & 0xFF;
+        CanMsg txMsg(CanExtendedId(this->can_address | (VescCANMsg::CAN_PACKET_PROCESS_RX_BUFFER << 8)), 3, process_buffer);
         this->can->write(txMsg);
     }
 }
